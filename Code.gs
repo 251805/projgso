@@ -31,6 +31,91 @@ function doGet() {
 }
 
 /**
+ * Updates existing Google Sheets to new GSOID# structure
+ */
+function updateSheetStructure() {
+  const ss = SpreadsheetApp.openById(MASTER_SPREADSHEET_ID);
+  
+  // Update PR_DATABASE sheet
+  let prSheet = ss.getSheetByName(PR_SHEET_NAME);
+  if (prSheet) {
+    const currentHeaders = prSheet.getRange(1, 1, 1, prSheet.getLastColumn()).getValues()[0];
+    const newHeaders = [
+      "Timestamp", "DEPARTMENT", "DATE", "SECTION", "GSOID#", "PR#", "REMARKS", 
+      "BUDGET#", "BAC#", "REQUESTED_BY", "STOCK_NO", "UNIT", "ITEM_DESCRIPTION", 
+      "QTY", "UNIT_COST", "TOTAL_COST", "ACTUAL_RECEIVED", "NOTES"
+    ];
+    
+    // Check if headers need updating
+    let needsUpdate = false;
+    for (let i = 0; i < newHeaders.length; i++) {
+      if (currentHeaders[i] !== newHeaders[i]) {
+        needsUpdate = true;
+        break;
+      }
+    }
+    
+    if (needsUpdate) {
+      // Insert new GSOID# column at position 5 (index 4)
+      if (currentHeaders[4] !== "GSOID#") {
+        prSheet.insertColumnBefore(5);
+        prSheet.getRange(1, 5).setValue("GSOID#");
+      }
+      
+      // Insert PR# column at position 6 (index 5) if it doesn't exist
+      if (currentHeaders[5] !== "PR#") {
+        prSheet.insertColumnBefore(6);
+        prSheet.getRange(1, 6).setValue("PR#");
+      }
+      
+      // Format headers
+      prSheet.getRange(1, 1, 1, newHeaders.length).setValues([newHeaders])
+        .setFontWeight("bold").setBackground("#1e293b").setFontColor("white");
+    }
+  }
+
+  // Update DR_DATABASE sheet
+  let drSheet = ss.getSheetByName(DR_SHEET_NAME);
+  if (drSheet) {
+    const currentDRHeaders = drSheet.getRange(1, 1, 1, drSheet.getLastColumn()).getValues()[0];
+    const newDRHeaders = [
+      "Timestamp", "GSOID#", "PR#", "DEPARTMENT", "DATE", "SECTION", "REMARKS", 
+      "BUDGET#", "BAC#", "REQUESTED_BY", "STOCK_NO", "UNIT", "ITEM_DESCRIPTION", 
+      "QTY_PURCHASED", "UNIT_COST", "TOTAL_COST", "ACTUAL_RECEIVED", "NOTES"
+    ];
+    
+    // Check if DR headers need updating
+    let needsDRUpdate = false;
+    for (let i = 0; i < newDRHeaders.length; i++) {
+      if (currentDRHeaders[i] !== newDRHeaders[i]) {
+        needsDRUpdate = true;
+        break;
+      }
+    }
+    
+    if (needsDRUpdate) {
+      // Insert GSOID# column at position 2 (index 1)
+      if (currentDRHeaders[1] !== "GSOID#") {
+        drSheet.insertColumnBefore(2);
+        drSheet.getRange(1, 2).setValue("GSOID#");
+      }
+      
+      // Insert PR# column at position 3 (index 2)
+      if (currentDRHeaders[2] !== "PR#") {
+        drSheet.insertColumnBefore(3);
+        drSheet.getRange(1, 3).setValue("PR#");
+      }
+      
+      // Format headers
+      drSheet.getRange(1, 1, 1, newDRHeaders.length).setValues([newDRHeaders])
+        .setFontWeight("bold").setBackground("#16a34a").setFontColor("white");
+    }
+  }
+  
+  return "Sheet structure updated to GSOID# format";
+}
+
+/**
  * Initializes the master sheet structure
  */
 function setupSheet() {
