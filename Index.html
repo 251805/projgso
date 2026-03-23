@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <base target="_top">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+    body { font-family: 'Inter', sans-serif; background-color: #0b0e14; color: #e2e8f0; margin: 0; overflow: hidden; }
+    
+    .sidebar { width: 320px; height: 100vh; background: #0f172a; border-right: 1px solid #00d2ff; position: fixed; display: flex; flex-direction: column; z-index: 50; transition: border-color 0.3s; }
+    .sidebar.delivery-mode { border-right-color: #10b981; }
+    .main { margin-left: 320px; padding: 40px; height: 100vh; overflow-y: auto; }
+    
+    .anime-card { background: rgba(23, 28, 41, 0.9); border: 1px solid rgba(0, 210, 255, 0.3); border-radius: 12px; }
+    .delivery-mode .anime-card { border-color: rgba(16, 185, 129, 0.3); }
+
+    .btn-gradient { background: linear-gradient(45deg, #00d2ff, #9d50bb); transition: 0.3s ease; color: white; font-weight: bold; }
+    .btn-gradient-delivery { background: linear-gradient(45deg, #10b981, #047857); transition: 0.3s ease; color: white; font-weight: bold; }
+    .btn-gradient:hover, .btn-gradient-delivery:hover { filter: brightness(1.2); transform: translateY(-1px); }
+
+    .input-field { background: #1e293b; border: 1px solid #334155; color: white; padding: 10px; border-radius: 6px; width: 100%; }
+    .input-field:focus { border-color: #00d2ff; outline: none; }
+    .delivery-mode .input-field:focus { border-color: #10b981; }
+    .input-field[readonly] { background: #0f172a; border-color: #1e293b; color: #94a3b8; cursor: not-allowed; }
+    
+    .search-input { background: #1e293b; border: 1px solid #00d2ff; color: white; padding: 12px; border-radius: 8px; width: 100%; font-size: 13px; }
+    .delivery-mode .search-input { border-color: #10b981; }
+    
+    .highlight-red { border: 2px solid #ef4444 !important; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; align-items: center; justify-content: center; z-index: 100; }
+    
+    /* Disclaimer Styles */
+    .disclaimer-container { border-top: 1px solid #1e293b; padding-top: 10px; margin-top: auto; position: relative; }
+    .disclaimer-trigger { color: #64748b; font-size: 10px; font-weight: bold; cursor: help; text-decoration: underline; transition: 0.3s; padding: 10px 0; display: block; text-align: center; }
+    .disclaimer-trigger:hover { color: #00d2ff; }
+    .delivery-mode .disclaimer-trigger:hover { color: #10b981; }
+    .disclaimer-content { 
+      display: none; background: #1e293b; border: 1px solid #00d2ff; padding: 15px; border-radius: 8px; font-size: 10px; color: #94a3b8; line-height: 1.6; position: absolute;
+      bottom: 40px; left: 10px; right: 10px; max-height: 400px; overflow-y: auto; box-shadow: 0 -10px 30px rgba(0,0,0,0.7); z-index: 60;
+    }
+    .delivery-mode .disclaimer-content { border-color: #10b981; }
+    .disclaimer-container:hover .disclaimer-content { display: block; }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: #00d2ff; border-radius: 10px; }
+    .delivery-mode ::-webkit-scrollbar-thumb { background: #10b981; }
+
+    .nav-btn { width: 100%; padding: 12px; border-radius: 8px; font-size: 11px; font-weight: bold; letter-spacing: 1px; margin-bottom: 8px; transition: 0.3s; text-align: left; padding-left: 20px; }
+    .nav-btn.active { background: #1e293b; color: #00d2ff; border-left: 4px solid #00d2ff; }
+    .delivery-mode .nav-btn.active { color: #10b981; border-left-color: #10b981; }
+    .hidden-module { display: none !important; }
+
+    /* Login UI */
+    #loginOverlay { position: fixed; inset: 0; background: #0b0e14; z-index: 200; display: flex; align-items: center; justify-content: center; }
+    .login-card { background: #0f172a; padding: 2.5rem; border-radius: 1rem; border: 1px solid #00d2ff; width: 100%; max-width: 400px; box-shadow: 0 0 50px rgba(0,210,255,0.1); }
+    #adminPopUp { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 300; display: none; align-items: center; justify-content: center; flex-direction: column; }
+    .admin-img { max-width: 350px; border-radius: 1rem; border: 4px solid #00d2ff; box-shadow: 0 0 30px #00d2ff; }
+  </style>
+</head>
+<body class="flex" id="appBody">
+
+  <div id="loginOverlay">
+    <div class="login-card text-center">
+      <img src="https://github.com/251805/sirpacheck/blob/main/gso.png?raw=true" class="h-16 mx-auto mb-6">
+      <h2 class="text-xl font-bold text-blue-400 mb-6 uppercase tracking-widest">GSO Procurement System</h2>
+      <div class="space-y-4">
+        <input type="text" id="username" placeholder="Username" class="input-field text-center" onkeydown="if(event.key==='Enter') document.getElementById('password').focus()">
+        <input type="password" id="password" placeholder="Password" class="input-field text-center" onkeydown="if(event.key==='Enter') handleLogin()">
+        <button onclick="handleLogin()" id="loginBtn" class="w-full py-3 btn-gradient rounded-lg uppercase text-xs font-bold tracking-widest mt-2">Login</button>
+        <div class="relative py-2">
+           <hr class="border-gray-800">
+           <span class="absolute top-0 left-1/2 -translate-x-1/2 bg-[#0f172a] px-3 text-[10px] text-gray-500 uppercase"></span>
+        </div>
+        <button onclick="guestLogin()" class="w-full py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg uppercase text-xs tracking-widest">Guest PR Request</button>
+      </div>
+      <p id="loginError" class="text-red-500 text-[10px] mt-4 uppercase hidden">Login Failed: Access Denied</p>
+    </div>
+  </div>
+
+  <div id="adminPopUp">
+    <img id="adminImage" src="" class="admin-img mb-6">
+    <div id="adminWelcomeTxt" class="text-blue-400 font-bold mb-6 text-xl tracking-widest uppercase text-center">Welcome back, Admin</div>
+    <button onclick="closeAdminPop()" class="px-12 py-4 bg-blue-600 text-white rounded-full font-bold uppercase text-xs tracking-widest hover:bg-blue-500 shadow-lg">Enter System</button>
+  </div>
+
+ <aside id="sidebar" class="sidebar p-6">
+    <div class="flex items-center space-x-3 mb-8">
+      <img src="https://github.com/251805/sirpacheck/blob/main/gso.png?raw=true" class="h-10">
+      <div>
+        <h1 id="sidebarTitle" class="text-xs font-bold text-blue-400 uppercase">GSO Procurement</h1>
+        <p class="text-[9px] text-gray-500">v6.1 Unified System</p>
+      </div>
+    </div>
+
+    <div class="mb-6">
+      <h2 class="text-[10px] text-gray-500 font-bold mb-3 uppercase tracking-widest">Navigation</h2>
+      <button onclick="switchModule('purchase')" id="nav-purchase" class="nav-btn active">1. PURCHASE REQUEST</button>
+      <button onclick="switchModule('delivery')" id="nav-delivery" class="nav-btn admin-only hidden">2. DELIVERY CHECKER</button>
+    </div>
+
+    <hr class="border-gray-800 mb-6">
+
+    <div id="purchaseControls">
+      <button onclick="resetPurchaseForm()" class="w-full py-4 btn-gradient rounded-lg mb-4 uppercase text-xs tracking-widest">NEW PURCHASE</button>
+      
+      <a href="https://script.google.com/macros/s/AKfycbxeCFeDJXm-Lcai056I7L61A0ZHg_2Q6Wq9wflg8o-6l9F4OA0k_uT5OWeamenhzc-m/exec" 
+         target="_blank" class="w-full py-3 bg-purple-700 rounded-lg mb-6 uppercase text-xs tracking-widest text-center block hover:bg-purple-600">GSO PRICELIST</a>
+      
+      <div class="admin-only hidden" id="searchContainer">
+        <h2 class="text-[10px] text-gray-500 font-bold mb-2 uppercase tracking-tighter">SEARCH DATABASE</h2>
+        <div class="relative">
+          <input type="text" id="prSearchInput" class="search-input" placeholder="Enter GSOID# (GSO032126-001)" onkeydown="if(event.key==='Enter') performSearch()">
+          <button onclick="performSearch()" class="absolute right-3 top-3 text-blue-400 hover:text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="deliveryControls" class="hidden-module admin-only hidden">
+       <h2 class="text-[10px] text-gray-500 font-bold mb-2 uppercase tracking-tighter">PULL GSOID FOR CHECKING</h2>
+       <div class="relative">
+        <input type="text" id="drSearchInput" class="search-input" placeholder="Search GSOID# to Check..." onkeydown="if(event.key==='Enter') performSearch()">
+        <button onclick="performSearch()" class="absolute right-3 top-3 text-green-400 hover:text-white">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+        </button>
+      </div>
+      <button onclick="resetDeliveryForm()" class="w-full py-3 bg-gray-800 rounded-lg mt-4 uppercase text-xs tracking-widest text-gray-400 hover:bg-gray-700 hover:text-white">CLEAR FORM</button>
+    </div>
+
+    <p id="searchStatus" class="text-[9px] mt-2 text-gray-600 uppercase italic"></p>
+
+    <div class="disclaimer-container">
+      <div class="disclaimer-content">
+        <p class="font-bold text-blue-400 mb-2 border-b border-gray-700 pb-1 uppercase">Disclaimer & Terms of Use</p>
+        <p class="font-bold text-gray-400 mt-2">1. "AS-IS" PROVISION</p>
+        <p>This automation tool is provided "AS-IS" for internal productivity purposes of the GSO. Employee 251805 makes no warranties, express or implied, regarding the continuous performance, accuracy, or reliability of the script.</p>
+        <p class="font-bold text-gray-400 mt-2">2. LIMITATION OF LIABILITY</p>
+        <p>Under no circumstances shall the Employee 251805 be held liable for any direct, indirect, or incidental damages, including but not limited to:</p>
+        <ul class="list-disc ml-4 space-y-1">
+          <li><strong>Data Loss or Corruption:</strong> Users are responsible for maintaining independent backups of all Google Sheets data.</li>
+          <li><strong>System "Bricking" or Downtime:</strong> Technical failures resulting from Google Service interruptions are beyond the Employee 25180 control.</li>
+          <li><strong>Service Quotas:</strong> This tool operates under Consumer-Tier Google Quotas (Free Gmail). Usage is subject to daily execution limits.</li>
+        </ul>
+        <p class="font-bold text-gray-400 mt-2">3. THIRD-PARTY DEPENDENCIES</p>
+        <p>The system relies on external Logic Verification Engines and Google API services. Any "Automated" components are industry-standard diagnostic features used solely for Error Detection and Syntax Integrity.</p>
+        <p class="font-bold text-gray-400 mt-2">4. INTELLECTUAL PROPERTY & MAINTENANCE</p>
+        <p>The underlying logic and custom architecture remain the proprietary property of the Employee 251805. Access is granted under a Limited Usage License tied to the Employee 251805 active employment contract. Unauthorized attempts to modify or migrate the source code without the Employee 251805 oversight may result in permanent system failure.</p>
+        <p class="font-bold text-gray-400 mt-2">5. USER ACKNOWLEDGMENT</p>
+        <p>By clicking "CREATE NEW PR" or "PROCESS PROCUREMENT" the User and the Company acknowledge these risks and agree to indemnify the Employee 251805 against all claims arising from the use of this experimental automation.</p>
+      </div>
+      <span class="disclaimer-trigger">D I S C L A I M E R</span>
+    </div>
+</aside>
+
+  <main class="main">
+    <div id="module-purchase" class="anime-card p-8">
+      <div class="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
+        <h2 id="purchaseHeader" class="text-2xl font-bold text-blue-400 uppercase">Purchase Request</h2>
+        <div id="editModeIndicator" class="hidden text-[10px] bg-blue-900 text-blue-200 px-3 py-1 rounded-full uppercase">Edit Mode</div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div>
+          <label class="text-[10px] uppercase font-bold text-gray-500">Department *</label>
+          <select id="department" class="input-field mt-1 mandatory">
+            <option value="">-- Choose Department --</option>
+            <option>Office of the Municipal Mayor</option>
+            <option>Office of the Municipal Administrator</option>
+            <option>Chief of Staff – Office of Municipal Mayor</option>
+            <option>Bureau of Fire Protection (BFP)</option>
+            <option>Philippine National Police (PNP)</option>
+            <option>Office of the Sangguniang Bayan</option>
+            <option>Office of the Secretary to the Sangguniang Bayan</option>
+            <option>Municipal Health Office</option>
+            <option>Municipal Agriculturist Office</option>
+            <option>Municipal Treasurer’s Office</option>
+            <option>Municipal Accounting Office</option>
+            <option>Municipal Social Welfare and Development Office</option>
+            <option>Municipal Civil Registrar Office</option>
+            <option>Municipal Assessor’s Office</option>
+            <option>Municipal Planning and Development Coordinator’s Office</option>
+            <option>Municipal Human Resource Management Office</option>
+            <option>Municipal Interior and Local Government Operations Office</option>
+            <option>Municipal Engineering Office</option>
+            <option>Municipal Budget Office</option>
+            <option>Municipal Disaster Risk Reduction and Management Office</option>
+            <option>Municipal General Services Office</option>
+            <option>Pambayang Kapisanan ng mga Barangay</option>
+          </select>
+        </div>
+        <div><label class="text-[10px] uppercase font-bold text-gray-500">Date *</label><input type="date" id="reqDate" class="input-field mt-1 mandatory"></div>
+        <div><label class="text-[10px] uppercase font-bold text-gray-500">Section</label><input type="text" id="section" class="input-field mt-1"></div>
+        <div><label class="text-[10px] uppercase font-bold text-gray-500">PR #</label><input type="text" id="prNumber" class="input-field mt-1" placeholder=""></div>
+        <div><label class="text-[10px] uppercase font-bold text-gray-500">Remarks</label><input type="text" id="remarks" class="input-field mt-1"></div>
+        <div><label class="text-[10px] uppercase font-bold text-gray-500">Budget #</label><input type="text" id="budgetNo" class="input-field mt-1"></div>
+        <div><label class="text-[10px] uppercase font-bold text-gray-500">BAC #</label><input type="text" id="bacNo" class="input-field mt-1"></div>
+        <div><label class="text-[10px] uppercase font-bold text-gray-500">Requested By *</label><input type="text" id="requestedBy" class="input-field mt-1 mandatory"></div>
+      </div>
+
+      <div class="overflow-x-auto mb-6">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-gray-800 text-gray-400 uppercase text-[10px]">
+            <tr>
+              <th class="p-3">Stock No</th>
+              <th class="p-3">Unit*</th>
+              <th class="p-3 w-1/3">Description*</th>
+              <th class="p-3">Qty*</th>
+              <th class="p-3">Cost*</th>
+              <th class="p-3 text-right">Total</th>
+              <th class="p-3"></th>
+            </tr>
+          </thead>
+          <tbody id="purchaseItemBody"></tbody>
+        </table>
+      </div>
+
+      <div class="flex justify-between items-center">
+        <button onclick="addPurchaseRow()" class="text-xs text-blue-400 font-bold hover:underline">+ Add Line Item</button>
+        <div class="text-right">
+          <p class="text-[10px] text-gray-500 uppercase">Estimated Total</p>
+          <p id="purchaseGrandTotal" class="text-3xl font-bold text-white">0.00</p>
+        </div>
+      </div>
+
+      <div class="mt-12 flex justify-center">
+        <button id="submitPurchaseBtn" onclick="submitPurchase()" class="px-20 py-4 btn-gradient rounded-full uppercase text-sm tracking-widest shadow-xl">Process Procurement</button>
+      </div>
+    </div>
+
+    <div id="module-delivery" class="anime-card p-8 hidden-module admin-only hidden">
+      <div id="deliveryCheckingContainer" class="hidden">
+        <div class="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
+          <h2 class="text-2xl font-bold text-green-400 uppercase">Delivery Checking</h2>
+          <div class="text-[12px] bg-green-900 text-green-200 px-4 py-2 rounded-full uppercase font-bold tracking-wider">GSOID: <span id="lbl-pr">---</span></div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 text-xs bg-gray-900 p-6 rounded-lg border border-gray-800">
+          <div><label class="uppercase font-bold text-gray-500 text-[10px]">Department</label><p id="lbl-dept" class="font-semibold text-white mt-1"></p></div>
+          <div><label class="uppercase font-bold text-gray-500 text-[10px]">Date</label><p id="lbl-date" class="text-white mt-1"></p></div>
+          <div><label class="uppercase font-bold text-gray-500 text-[10px]">Section</label><p id="lbl-section" class="text-white mt-1"></p></div>
+          <div><label class="uppercase font-bold text-gray-500 text-[10px]">Remarks</label><p id="lbl-remarks" class="text-white mt-1"></p></div>
+        </div>
+
+        <div class="overflow-x-auto mb-6">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-gray-800 text-gray-400 uppercase text-[10px]">
+              <tr>
+                <th class="p-3">Stock No</th>
+                <th class="p-3">Unit</th>
+                <th class="p-3 w-1/4">Description</th>
+                <th class="p-3">Cost</th>
+                <th class="p-3 bg-blue-900 bg-opacity-30 text-blue-300">Purchased Qty</th>
+                <th class="p-3 bg-green-900 bg-opacity-30 text-green-300 border-l border-green-700">Actual Delivered*</th>
+                <th class="p-3 bg-green-900 bg-opacity-30 text-green-300">Notes*</th>
+              </tr>
+            </thead>
+            <tbody id="deliveryItemBody"></tbody>
+          </table>
+        </div>
+
+        <div class="flex justify-end items-center mt-6 p-4 bg-gray-900 rounded-lg border border-gray-800">
+          <div class="text-right mr-10"><p class="text-[10px] text-gray-500 uppercase">Total Purchased</p><p id="valPurchased" class="text-2xl font-bold text-blue-400">0.00</p></div>
+          <div class="text-right"><p class="text-[10px] text-gray-500 uppercase">Total Received</p><p id="valReceived" class="text-3xl font-bold text-green-400">0.00</p></div>
+        </div>
+
+        <div class="mt-10 flex justify-center">
+          <button id="submitDeliveryBtn" onclick="submitDelivery()" class="px-20 py-4 btn-gradient-delivery rounded-full uppercase text-sm tracking-widest shadow-xl">Sync Database</button>
+        </div>
+      </div>
+
+      <div id="deliveryEmptyState" class="flex flex-col items-center justify-center h-96 text-center opacity-50">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+        <h2 class="text-xl font-bold text-gray-400 uppercase tracking-widest">Waiting for GSOID</h2>
+        <p class="text-xs text-gray-500 mt-2">Search a GSOID number to load delivery details.</p>
+      </div>
+    </div>
+  </main>
+
+  <div id="viewModal" class="modal-overlay">
+    <div class="anime-card p-10 w-full max-w-2xl mx-4 relative bg-[#0f172a]">
+      <button onclick="closeModal()" class="absolute top-4 right-6 text-gray-500 hover:text-white uppercase text-xs font-bold">CLOSE ✖</button>
+      <h3 class="text-3xl font-bold text-blue-400 mb-6" id="modalPrTitle">PR: 000000-00</h3>
+      
+      <div id="successNote" class="hidden bg-green-900 bg-opacity-30 border border-green-500 text-green-400 p-4 rounded mb-6 text-sm">
+        Operation successful. The database has been updated.
+      </div>
+
+      <div class="grid grid-cols-2 gap-y-6 gap-x-8 text-xs mb-10 bg-black bg-opacity-30 p-8 rounded-lg">
+        <div><p class="text-gray-500 uppercase font-bold mb-1">Department</p><p id="v-dept" class="text-white text-sm font-semibold"></p></div>
+        <div><p class="text-gray-500 uppercase font-bold mb-1">Date</p><p id="v-date" class="text-white text-sm"></p></div>
+        <div><p class="text-gray-500 uppercase font-bold mb-1">Requested By</p><p id="v-req" class="text-white text-sm"></p></div>
+        <div id="v-rec-box" class="hidden"><p class="text-gray-500 uppercase font-bold mb-1">Total Received</p><p id="v-rec-val" class="text-green-400 text-sm font-bold"></p></div>
+      </div>
+
+      <div class="flex space-x-4">
+        <button id="btnEdit" class="flex-1 py-4 bg-blue-600 rounded text-xs font-bold uppercase hover:bg-blue-500 tracking-widest admin-only hidden">Edit Request</button>
+        <a id="btnDownload" href="#" target="_blank" class="flex-1 py-4 bg-purple-600 rounded text-xs font-bold uppercase text-center block hover:bg-purple-500 tracking-widest">Download Doc</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentModule = 'purchase';
+    let currentEditPR = null;
+    let currentRecord = null;
+    let currentUserMode = null; 
+
+    window.onload = () => {
+      addPurchaseRow();
+      document.getElementById('username').focus();
+    };
+
+    /** ENHANCED LOGIN HANDLER **/
+    function handleLogin() {
+      const u = document.getElementById('username').value.toLowerCase().trim();
+      const p = document.getElementById('password').value.trim();
+      const err = document.getElementById('loginError');
+      const btn = document.getElementById('loginBtn');
+      
+      err.classList.add('hidden');
+      btn.innerText = "VERIFYING...";
+
+      setTimeout(() => {
+        // ADMIN: LEE
+        if (u === 'lee' && p === 'metallica') {
+          showAdminSuccess('https://github.com/251805/sirpacheck/blob/main/18.png?raw=true', 'Lee');
+        } 
+        // ADMIN: DOJIE
+        else if (u === 'dojie' && p === 'MGDH1') {
+          showAdminSuccess('https://github.com/251805/sirpacheck/blob/main/dojie.jpg?raw=true', 'Dojie');
+        } 
+        else {
+          err.classList.remove('hidden');
+          btn.innerText = "Administrator Login";
+          document.getElementById('password').value = "";
+          document.getElementById('password').focus();
+        }
+      }, 400);
+    }
+
+    function showAdminSuccess(imgUrl, user) {
+      currentUserMode = 'admin';
+      document.getElementById('adminImage').src = imgUrl;
+      document.getElementById('adminPopUp').style.display = 'flex';
+      document.getElementById('loginOverlay').style.display = 'none'; // Force hide
+      document.getElementById('adminWelcomeTxt').innerText = "Welcome back, " + user;
+      
+      // Instantly reveal Admin Elements
+      document.querySelectorAll('.admin-only').forEach(el => {
+          el.classList.remove('hidden', 'hidden-module');
+          el.style.display = 'block';
+      });
+    }
+
+    function guestLogin() {
+      currentUserMode = 'guest';
+      document.getElementById('loginOverlay').style.display = 'none'; // Force hide
+      
+      // Ensure Admin Specific Features remain hidden
+      document.querySelectorAll('.admin-only').forEach(el => {
+          el.classList.add('hidden');
+          el.style.display = 'none';
+      });
+    }
+
+    function closeAdminPop() {
+      document.getElementById('adminPopUp').style.display = 'none';
+    }
+
+    /** UI MODULES **/
+    function switchModule(mod) {
+      if (currentUserMode === 'guest' && mod === 'delivery') {
+          alert("GUEST ACCESS: Delivery module is restricted.");
+          return;
+      }
+
+      currentModule = mod;
+      document.getElementById('appBody').className = mod === 'delivery' ? 'flex delivery-mode' : 'flex';
+      document.getElementById('sidebarTitle').innerText = mod === 'delivery' ? 'GSO DELIVERY CHECKER' : 'GSO PROCUREMENT';
+      
+      document.getElementById('nav-purchase').classList.toggle('active', mod === 'purchase');
+      document.getElementById('nav-delivery').classList.toggle('active', mod === 'delivery');
+      
+      document.getElementById('purchaseControls').classList.toggle('hidden-module', mod === 'delivery');
+      document.getElementById('deliveryControls').classList.toggle('hidden-module', mod === 'purchase');
+      
+      document.getElementById('module-purchase').classList.toggle('hidden-module', mod === 'delivery');
+      document.getElementById('module-delivery').classList.toggle('hidden-module', mod === 'purchase');
+      
+      document.getElementById('searchStatus').innerText = "";
+    }
+
+    /** PROCUREMENT LOGIC **/
+    function addPurchaseRow(preData = null) {
+      const tbody = document.getElementById('purchaseItemBody');
+      const tr = document.createElement('tr');
+      tr.className = "border-b border-gray-800";
+      tr.innerHTML = `
+        <td class="p-2"><input type="text" class="input-field text-xs s-no" value="${preData ? preData.stockNo : ''}"></td>
+        <td class="p-2"><input type="text" class="input-field text-xs i-unit mandatory" value="${preData ? preData.unit : ''}"></td>
+        <td class="p-2"><input type="text" class="input-field text-xs i-desc mandatory" value="${preData ? preData.description : ''}"></td>
+        <td class="p-2"><input type="number" class="input-field text-xs i-qty mandatory" oninput="calcPurchaseRow(this)" value="${preData ? preData.qty : ''}"></td>
+        <td class="p-2"><input type="number" class="input-field text-xs i-cost mandatory" oninput="calcPurchaseRow(this)" value="${preData ? preData.unitCost : ''}"></td>
+        <td class="p-2 text-right font-bold text-blue-400 row-total">0.00</td>
+        <td class="p-2 text-center"><button onclick="this.closest('tr').remove(); sumPurchaseTotal();" class="text-red-500">✖</button></td>
+      `;
+      tbody.appendChild(tr);
+      if (preData) calcPurchaseRow(tr.querySelector('.i-qty'));
+    }
+
+    function calcPurchaseRow(el) {
+      const tr = el.closest('tr');
+      const q = tr.querySelector('.i-qty').value || 0;
+      const c = tr.querySelector('.i-cost').value || 0;
+      tr.querySelector('.row-total').innerText = (q * c).toFixed(2);
+      sumPurchaseTotal();
+    }
+
+    function sumPurchaseTotal() {
+      let total = 0;
+      document.querySelectorAll('#purchaseItemBody .row-total').forEach(span => total += parseFloat(span.innerText) || 0);
+      document.getElementById('purchaseGrandTotal').innerText = total.toLocaleString(undefined, {minimumFractionDigits: 2});
+    }
+
+    function submitPurchase() {
+      let hasError = false;
+      document.querySelectorAll('#module-purchase .mandatory').forEach(el => {
+        if (!el.value.trim()) { el.classList.add('highlight-red'); hasError = true; }
+        else el.classList.remove('highlight-red');
+      });
+      if (hasError) return alert("Validation Error: Please fill all mandatory fields (*)");
+      
+      const btn = document.getElementById('submitPurchaseBtn');
+      btn.disabled = true;
+      btn.innerText = "PROCESSING SUBMISSION...";
+
+      const formData = {
+        department: document.getElementById('department').value,
+        date: document.getElementById('reqDate').value,
+        section: document.getElementById('section').value,
+        remarks: document.getElementById('remarks').value,
+        prNumber: document.getElementById('prNumber').value,
+        budgetNo: document.getElementById('budgetNo').value,
+        bacNo: document.getElementById('bacNo').value,
+        requestedBy: document.getElementById('requestedBy').value,
+        isEdit: !!currentEditPR,
+        gsoidNumber: currentEditPR,
+        items: []
+      };
+
+      document.querySelectorAll('#purchaseItemBody tr').forEach(tr => {
+        formData.items.push({
+          stockNo: tr.querySelector('.s-no').value,
+          unit: tr.querySelector('.i-unit').value,
+          description: tr.querySelector('.i-desc').value,
+          qty: tr.querySelector('.i-qty').value,
+          unitCost: tr.querySelector('.i-cost').value
+        });
+      });
+
+      google.script.run.withSuccessHandler(res => {
+        btn.disabled = false;
+        btn.innerText = "Process Procurement";
+        if (res.success) {
+          showViewModal(res.gsoidNumber, formData.department, formData.date, formData.requestedBy, res.docUrl, false);
+          document.getElementById('successNote').classList.remove('hidden');
+          resetPurchaseForm();
+        } else {
+          alert("System Error: " + res.error);
+        }
+      }).processPurchase(formData);
+    }
+
+    /** DATABASE SEARCH **/
+    function performSearch() {
+      if (currentUserMode === 'guest') return;
+
+      const inputId = currentModule === 'purchase' ? 'prSearchInput' : 'drSearchInput';
+      const q = document.getElementById(inputId).value;
+      if (!q) return;
+      
+      document.getElementById('searchStatus').innerText = "Retrieving Record...";
+      google.script.run.withSuccessHandler(res => {
+        document.getElementById('searchStatus').innerText = res ? "Match Found" : "No Match Found";
+        if (res) {
+          if (currentModule === 'purchase') {
+            showViewModal(res.gsoid, res.dept, res.date, res.requestedBy, null, false);
+            currentRecord = res;
+          } else {
+            loadDeliveryRecord(res);
+          }
+        }
+      }).searchPR(q);
+    }
+
+    /** MODAL DISPLAY **/
+    function showViewModal(gsoid, dept, date, req, docUrl, isDelivery) {
+      document.getElementById('modalPrTitle').innerText = "GSOID: " + gsoid;
+      document.getElementById('v-dept').innerText = dept;
+      document.getElementById('v-date').innerText = date;
+      document.getElementById('v-req').innerText = req;
+      document.getElementById('successNote').classList.add('hidden');
+      
+      const btnDownload = document.getElementById('btnDownload');
+      if (docUrl) {
+        btnDownload.href = docUrl;
+        btnDownload.style.display = 'block';
+      } else {
+        btnDownload.style.display = 'none';
+      }
+
+      const btnEdit = document.getElementById('btnEdit');
+      if(currentUserMode === 'admin') {
+          btnEdit.classList.remove('hidden');
+          btnEdit.style.display = 'block';
+          btnEdit.onclick = () => loadEditPR(currentRecord);
+      } else {
+          btnEdit.classList.add('hidden');
+          btnEdit.style.display = 'none';
+      }
+
+      document.getElementById('v-rec-box').classList.toggle('hidden', !isDelivery);
+      document.getElementById('viewModal').style.display = 'flex';
+    }
+
+    /** EDIT LOGIC **/
+    function loadEditPR(item) {
+      if (currentUserMode !== 'admin') return;
+      
+      currentEditPR = item.gsoid;
+      document.getElementById('purchaseHeader').innerText = "EDITING GSOID: " + item.gsoid;
+      document.getElementById('editModeIndicator').classList.remove('hidden');
+      document.getElementById('department').value = item.dept || "";
+      document.getElementById('reqDate').value = item.date || "";
+      document.getElementById('section').value = item.section || "";
+      document.getElementById('prNumber').value = item.pr || "";
+      document.getElementById('remarks').value = item.remarks || "";
+      document.getElementById('budgetNo').value = item.budget || "";
+      document.getElementById('bacNo').value = item.bac || "";
+      document.getElementById('requestedBy').value = item.requestedBy || "";
+      document.getElementById('purchaseItemBody').innerHTML = "";
+      item.items.forEach(i => addPurchaseRow(i));
+      closeModal();
+    }
+
+    /** DELIVERY LOGIC **/
+    function loadDeliveryRecord(res) {
+      currentRecord = res;
+      document.getElementById('lbl-pr').innerText = res.gsoid;
+      document.getElementById('lbl-dept').innerText = res.dept;
+      document.getElementById('lbl-date').innerText = res.date;
+      document.getElementById('lbl-section').innerText = res.section || "N/A";
+      document.getElementById('lbl-remarks').innerText = res.remarks || "N/A";
+      
+      const tbody = document.getElementById('deliveryItemBody');
+      tbody.innerHTML = "";
+      
+      res.items.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.className = "border-b border-gray-800";
+        tr.innerHTML = `
+          <td class="p-3 text-gray-500">${item.stockNo}</td>
+          <td class="p-3">${item.unit}</td>
+          <td class="p-3 font-semibold">${item.description}</td>
+          <td class="p-3 text-gray-400">${parseFloat(item.unitCost).toFixed(2)}</td>
+          <td class="p-3 bg-blue-900 bg-opacity-10 text-blue-400 font-bold">${item.qty}</td>
+          <td class="p-3 bg-green-900 bg-opacity-10 border-l border-green-800">
+            <input type="number" class="input-field text-xs d-actual w-20" value="${item.actual}" oninput="calcDeliveryTotal()">
+          </td>
+          <td class="p-3 bg-green-900 bg-opacity-10">
+            <input type="text" class="input-field text-xs d-notes" value="${item.notes}" placeholder="...">
+          </td>
+          <input type="hidden" class="d-cost" value="${item.unitCost}">
+          <input type="hidden" class="d-qty-p" value="${item.qty}">
+        `;
+        tbody.appendChild(tr);
+      });
+      
+      document.getElementById('deliveryEmptyState').classList.add('hidden');
+      document.getElementById('deliveryCheckingContainer').classList.remove('hidden');
+      calcDeliveryTotal();
+    }
+
+    function calcDeliveryTotal() {
+      let totalP = 0, totalR = 0;
+      document.querySelectorAll('#deliveryItemBody tr').forEach(tr => {
+        const cost = parseFloat(tr.querySelector('.d-cost').value) || 0;
+        const qP = parseFloat(tr.querySelector('.d-qty-p').value) || 0;
+        const qA = parseFloat(tr.querySelector('.d-actual').value) || 0;
+        totalP += (cost * qP);
+        totalR += (cost * qA);
+      });
+      document.getElementById('valPurchased').innerText = totalP.toLocaleString(undefined, {minimumFractionDigits: 2});
+      document.getElementById('valReceived').innerText = totalR.toLocaleString(undefined, {minimumFractionDigits: 2});
+    }
+
+    function submitDelivery() {
+      const btn = document.getElementById('submitDeliveryBtn');
+      btn.disabled = true;
+      btn.innerText = "SYNCING DATABASE...";
+
+      const formData = {
+        gsoidNumber: currentRecord.gsoid,
+        prNumber: currentRecord.pr,
+        department: currentRecord.dept,
+        date: currentRecord.date,
+        section: currentRecord.section,
+        remarks: currentRecord.remarks,
+        budgetNo: currentRecord.budget,
+        bacNo: currentRecord.bac,
+        requestedBy: currentRecord.requestedBy,
+        items: []
+      };
+
+      document.querySelectorAll('#deliveryItemBody tr').forEach(tr => {
+        formData.items.push({
+          description: tr.querySelector('td:nth-child(3)').innerText,
+          qty: tr.querySelector('.d-qty-p').value,
+          unitCost: tr.querySelector('.d-cost').value,
+          actual: tr.querySelector('.d-actual').value,
+          notes: tr.querySelector('.d-notes').value,
+          stockNo: tr.querySelector('td:nth-child(1)').innerText,
+          unit: tr.querySelector('td:nth-child(2)').innerText
+        });
+      });
+
+      google.script.run.withSuccessHandler(res => {
+        btn.disabled = false;
+        btn.innerText = "Sync Database";
+        if (res.success) {
+          document.getElementById('v-rec-val').innerText = document.getElementById('valReceived').innerText;
+          showViewModal(res.gsoidNumber, formData.department, formData.date, formData.requestedBy, res.docUrl, true);
+          document.getElementById('successNote').classList.remove('hidden');
+          resetDeliveryForm();
+        } else alert("Error: " + res.error);
+      }).processDelivery(formData);
+    }
+
+    /** FORM RESETS **/
+    function resetPurchaseForm() {
+      currentEditPR = null;
+      document.getElementById('purchaseHeader').innerText = "PURCHASE REQUEST";
+      document.getElementById('editModeIndicator').classList.add('hidden');
+      document.getElementById('department').value = "";
+      document.getElementById('reqDate').value = "";
+      document.getElementById('section').value = "";
+      document.getElementById('prNumber').value = "";
+      document.getElementById('remarks').value = "";
+      document.getElementById('budgetNo').value = "";
+      document.getElementById('bacNo').value = "";
+      document.getElementById('requestedBy').value = "";
+      document.getElementById('purchaseItemBody').innerHTML = "";
+      addPurchaseRow();
+      sumPurchaseTotal();
+    }
+
+    function resetDeliveryForm() {
+      currentRecord = null;
+      document.getElementById('deliveryCheckingContainer').classList.add('hidden');
+      document.getElementById('deliveryEmptyState').classList.remove('hidden');
+      document.getElementById('drSearchInput').value = "";
+    }
+
+    function closeModal() { document.getElementById('viewModal').style.display = 'none'; }
+  </script>
+</body>
+</html>
