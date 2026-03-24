@@ -1,6 +1,6 @@
 /**
  * CHUCKGPT UNIFIED PROCUREMENT & DELIVERY SYSTEM - V6.2
- * Master Spreadsheet: 1lZ9hV64nqiINeazlljKPUrgD46MKr5CQLuz1qqkS-6g
+ * Master Spreadsheet: 1KeXiQZnlENkDKX9EggL5YFdFXdwbmIzDle1DepMbJ4U
  * Logic: Combined Procurement (Blue) and Delivery (Green) modules.
  * UPDATED: GSOID# now serves as main system ID, PR# is optional field.
  * ENHANCED: Zero-Hallucination Inventory Management System
@@ -8,7 +8,6 @@
  */
 
 // --- GLOBAL CONFIGURATION ---
-const MASTER_SPREADSHEET_ID = "1KeXiQZnlENkDKX9EggL5YFdFXdwbmIzDle1DepMbJ4U";
 const PR_SHEET_NAME = "PR_DATABASE";
 const DR_SHEET_NAME = "DR_DATABASE";
 const INVENTORY_SHEET_NAME = "INVENTORY_MASTER";
