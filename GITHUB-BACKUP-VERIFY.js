@@ -31,7 +31,12 @@ function verifyGitHubRepository() {
       "README.md",
       "README-CLASP.md",
       "COMPLETE-SYSTEM-VERIFY.js",
-      "PROJECT-CLEANUP-SUMMARY.md"
+      "GITHUB-BACKUP-VERIFY.js",
+      "GITHUB-SYNC-INSTRUCTIONS.md",
+      "GITHUB-STATUS-REPORT.md",
+      "PROJECT-CLEANUP-SUMMARY.md",
+      "DEPLOYMENT-FIX-GUIDE.md",
+      "DEPLOYMENT-COMMANDS.md"
     ];
     
     results.localFiles = localFiles;
@@ -154,6 +159,6 @@ function getGitHubToken() {
 }
 
 // AUTO-RUN VERIFICATION
-const verificationResults = verifyGitHubRepository();
+const results = verifyGitHubRepository();
 console.log("=== FINAL RESULTS ===");
-console.log(JSON.stringify(verificationResults, null, 2));
+console.log(JSON.stringify(results, null, 2));
