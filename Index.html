@@ -49,6 +49,28 @@
     .nav-btn.active { background: #1e293b; color: #00d2ff; border-left: 4px solid #00d2ff; }
     .delivery-mode .nav-btn.active { color: #10b981; border-left-color: #10b981; }
     .hidden-module { display: none !important; }
+    
+    /* Inventory Module Styles */
+    .inventory-mode .anime-card { border-color: rgba(245, 158, 11, 0.3); }
+    .inventory-mode .btn-gradient { background: linear-gradient(45deg, #f59e0b, #d97706); }
+    .inventory-mode .btn-gradient:hover { filter: brightness(1.2); transform: translateY(-1px); }
+    .inventory-mode .input-field:focus { border-color: #f59e0b; }
+    .inventory-mode .search-input { border-color: #f59e0b; }
+    .inventory-mode ::-webkit-scrollbar-thumb { background: #f59e0b; }
+    
+    /* RIS Module Styles */
+    .ris-mode .anime-card { border-color: rgba(139, 92, 246, 0.3); }
+    .ris-mode .btn-gradient { background: linear-gradient(45deg, #8b5cf6, #6d28d9); }
+    .ris-mode .btn-gradient:hover { filter: brightness(1.2); transform: translateY(-1px); }
+    .ris-mode .input-field:focus { border-color: #8b5cf6; }
+    .ris-mode .search-input { border-color: #8b5cf6; }
+    .ris-mode ::-webkit-scrollbar-thumb { background: #8b5cf6; }
+    
+    /* Module-specific button styles */
+    .btn-gradient-orange { background: linear-gradient(45deg, #f59e0b, #d97706); transition: 0.3s ease; color: white; font-weight: bold; }
+    .btn-gradient-orange:hover { filter: brightness(1.2); transform: translateY(-1px); }
+    .btn-gradient-purple { background: linear-gradient(45deg, #8b5cf6, #6d28d9); transition: 0.3s ease; color: white; font-weight: bold; }
+    .btn-gradient-purple:hover { filter: brightness(1.2); transform: translateY(-1px); }
 
     /* Login UI */
     #loginOverlay { position: fixed; inset: 0; background: #0b0e14; z-index: 200; display: flex; align-items: center; justify-content: center; }
@@ -96,6 +118,8 @@
       <h2 class="text-[10px] text-gray-500 font-bold mb-3 uppercase tracking-widest">Navigation</h2>
       <button onclick="switchModule('purchase')" id="nav-purchase" class="nav-btn active">1. PURCHASE REQUEST</button>
       <button onclick="switchModule('delivery')" id="nav-delivery" class="nav-btn admin-only hidden">2. DELIVERY CHECKER</button>
+      <button onclick="switchModule('inventory')" id="nav-inventory" class="nav-btn admin-only hidden">3. INVENTORY MASTER</button>
+      <button onclick="switchModule('ris')" id="nav-ris" class="nav-btn admin-only hidden">4. REQUISITION (RIS)</button>
     </div>
 
     <hr class="border-gray-800 mb-6">
@@ -103,7 +127,7 @@
     <div id="purchaseControls">
       <button onclick="resetPurchaseForm()" class="w-full py-4 btn-gradient rounded-lg mb-4 uppercase text-xs tracking-widest">NEW PURCHASE</button>
       
-      <a href="https://script.google.com/macros/s/AKfycbxeCFeDJXm-Lcai056I7L61A0ZHg_2Q6Wq9wflg8o-6l9F4OA0k_uT5OWeamenhzc-m/exec" 
+      <a href="https://script.google.com/macros/s/AKfycbzGkFdEOry2OYwepK98sFr0hta1DDKOOwB8kl9KV1DZpCpwIyvv35sTobUJyfHlXvum/exec" 
          target="_blank" class="w-full py-3 bg-purple-700 rounded-lg mb-6 uppercase text-xs tracking-widest text-center block hover:bg-purple-600">GSO PRICELIST</a>
       
       <div class="admin-only hidden" id="searchContainer">
@@ -126,6 +150,33 @@
         </button>
       </div>
       <button onclick="resetDeliveryForm()" class="w-full py-3 bg-gray-800 rounded-lg mt-4 uppercase text-xs tracking-widest text-gray-400 hover:bg-gray-700 hover:text-white">CLEAR FORM</button>
+    </div>
+
+    <div id="inventoryControls" class="hidden-module admin-only hidden">
+      <h2 class="text-[10px] text-gray-500 font-bold mb-2 uppercase tracking-tighter">INVENTORY STATUS</h2>
+      <div id="inventoryStatus" class="mb-4 p-3 bg-gray-800 rounded-lg">
+        <div class="text-center text-gray-400">Loading inventory status...</div>
+      </div>
+      <button onclick="refreshInventoryStatus()" class="w-full py-2 bg-orange-600 rounded-lg mb-2 uppercase text-xs tracking-widest text-white hover:bg-orange-500">REFRESH STATUS</button>
+      <div id="lowStockAlerts" class="hidden-module">
+        <h3 class="text-[9px] text-red-400 font-bold mb-2 uppercase">LOW STOCK ALERTS</h3>
+        <div id="alertsList" class="space-y-1"></div>
+      </div>
+    </div>
+
+    <div id="risControls" class="hidden-module admin-only hidden">
+      <h2 class="text-[10px] text-gray-500 font-bold mb-2 uppercase tracking-tighter">REQUISITION & ISSUE SLIP</h2>
+      <button onclick="createNewRIS()" class="w-full py-3 bg-purple-600 rounded-lg mb-4 uppercase text-xs tracking-widest text-white hover:bg-purple-500">CREATE NEW RIS</button>
+      <div class="admin-only hidden" id="risSearchContainer">
+        <h2 class="text-[10px] text-gray-500 font-bold mb-2 uppercase tracking-tighter">SEARCH RIS</h2>
+        <div class="relative">
+          <input type="text" id="risSearchInput" class="search-input" placeholder="Search RIS Number..." onkeydown="if(event.key==='Enter') performRISSearch()">
+          <button onclick="performRISSearch()" class="absolute right-3 top-3 text-purple-400 hover:text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+          </button>
+        </div>
+      </div>
+      <button onclick="resetRISForm()" class="w-full py-3 bg-gray-800 rounded-lg mt-4 uppercase text-xs tracking-widest text-gray-400 hover:bg-gray-700 hover:text-white">CLEAR FORM</button>
     </div>
 
     <p id="searchStatus" class="text-[9px] mt-2 text-gray-600 uppercase italic"></p>
@@ -275,6 +326,127 @@
         <p class="text-xs text-gray-500 mt-2">Search a GSOID number to load delivery details.</p>
       </div>
     </div>
+
+    <div id="module-inventory" class="anime-card p-8 hidden-module admin-only hidden">
+      <div class="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
+        <h2 class="text-2xl font-bold text-orange-400 uppercase">Inventory Master</h2>
+        <div class="flex items-center space-x-4">
+          <div class="text-right">
+            <p class="text-[10px] text-gray-500 uppercase">Total Items</p>
+            <p id="totalItems" class="text-2xl font-bold text-orange-400">0</p>
+          </div>
+          <div class="text-right">
+            <p class="text-[10px] text-gray-500 uppercase">Low Stock</p>
+            <p id="lowStockCount" class="text-2xl font-bold text-red-400">0</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="inventoryEmptyState" class="flex flex-col items-center justify-center h-96 text-center opacity-50">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+        <h2 class="text-xl font-bold text-gray-400 uppercase tracking-widest">Loading Inventory</h2>
+        <p class="text-xs text-gray-500 mt-2">Retrieving inventory status...</p>
+      </div>
+
+      <div id="inventoryContent" class="hidden">
+        <div id="inventorySummary" class="grid grid-cols-4 gap-4 mb-6">
+          <div class="bg-gray-800 p-4 rounded-lg text-center">
+            <p class="text-[10px] text-gray-500 uppercase">Active</p>
+            <p id="activeItems" class="text-xl font-bold text-green-400">0</p>
+          </div>
+          <div class="bg-gray-800 p-4 rounded-lg text-center">
+            <p class="text-[10px] text-gray-500 uppercase">Low Stock</p>
+            <p id="lowStockItems" class="text-xl font-bold text-yellow-400">0</p>
+          </div>
+          <div class="bg-gray-800 p-4 rounded-lg text-center">
+            <p class="text-[10px] text-gray-500 uppercase">Out of Stock</p>
+            <p id="outOfStockItems" class="text-xl font-bold text-red-400">0</p>
+          </div>
+          <div class="bg-gray-800 p-4 rounded-lg text-center">
+            <p class="text-[10px] text-gray-500 uppercase">Healthy</p>
+            <p id="healthyItems" class="text-xl font-bold text-blue-400">0</p>
+          </div>
+        </div>
+
+        <div id="lowStockAlertsContainer" class="hidden">
+          <h3 class="text-lg font-bold text-red-400 mb-4 uppercase">Low Stock Alerts</h3>
+          <div id="alertsContainer" class="space-y-2"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="module-ris" class="anime-card p-8 hidden-module admin-only hidden">
+      <div class="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
+        <h2 class="text-2xl font-bold text-purple-400 uppercase">Requisition & Issue Slip</h2>
+        <div id="risNumber" class="text-xl font-bold text-purple-400">RIS-000000-000</div>
+      </div>
+
+      <div id="risEmptyState" class="flex flex-col items-center justify-center h-96 text-center opacity-50">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.707.293H19a2 2 0 012 2v11a2 2 0 01-2 2z" /></svg>
+        <h2 class="text-xl font-bold text-gray-400 uppercase tracking-widest">Create New RIS</h2>
+        <p class="text-xs text-gray-500 mt-2">Click "Create New RIS" to start requisition process</p>
+      </div>
+
+      <div id="risContent" class="hidden">
+        <div class="grid grid-cols-2 gap-6 mb-6">
+          <div>
+            <label class="block text-[10px] text-gray-500 font-bold mb-2 uppercase">Department</label>
+            <input type="text" id="risDepartment" class="input-field text-sm" placeholder="Enter department">
+          </div>
+          <div>
+            <label class="block text-[10px] text-gray-500 font-bold mb-2 uppercase">Requested By</label>
+            <input type="text" id="risRequestedBy" class="input-field text-sm" placeholder="Enter name">
+          </div>
+          <div>
+            <label class="block text-[10px] text-gray-500 font-bold mb-2 uppercase">Purpose</label>
+            <input type="text" id="risPurpose" class="input-field text-sm" placeholder="Enter purpose">
+          </div>
+          <div>
+            <label class="block text-[10px] text-gray-500 font-bold mb-2 uppercase">Date Requested</label>
+            <input type="date" id="risDateRequested" class="input-field text-sm">
+          </div>
+        </div>
+
+        <div class="mb-6">
+          <h3 class="text-lg font-bold text-purple-400 mb-4 uppercase">Items</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs">
+              <thead>
+                <tr class="border-b border-gray-700">
+                  <th class="text-left p-2 text-gray-500">Stock No</th>
+                  <th class="text-left p-2 text-gray-500">Description</th>
+                  <th class="text-left p-2 text-gray-500">Unit</th>
+                  <th class="text-left p-2 text-gray-500">Qty Requested</th>
+                  <th class="text-left p-2 text-gray-500">Qty Issued</th>
+                  <th class="text-left p-2 text-gray-500">Unit Cost</th>
+                  <th class="text-left p-2 text-gray-500">Total Cost</th>
+                  <th class="text-left p-2 text-gray-500">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="risItemsTable">
+                <!-- Items will be added here -->
+              </tbody>
+            </table>
+          </div>
+          <button onclick="addRISItem()" class="mt-4 px-4 py-2 bg-purple-600 rounded-lg text-xs text-white hover:bg-purple-500">Add Item</button>
+        </div>
+
+        <div class="flex justify-between items-center mt-6 p-4 bg-gray-900 rounded-lg border border-gray-800">
+          <div class="text-right mr-10">
+            <p class="text-[10px] text-gray-500 uppercase">Total Items</p>
+            <p id="totalRISItems" class="text-2xl font-bold text-purple-400">0</p>
+          </div>
+          <div class="text-right">
+            <p class="text-[10px] text-gray-500 uppercase">Total Cost</p>
+            <p id="totalRISCost" class="text-3xl font-bold text-purple-400">0.00</p>
+          </div>
+        </div>
+
+        <div class="mt-10 flex justify-center">
+          <button id="submitRISBtn" onclick="submitRIS()" class="px-20 py-4 bg-purple-600 rounded-full uppercase text-sm tracking-widest shadow-xl text-white hover:bg-purple-500">Submit RIS</button>
+        </div>
+      </div>
+    </div>
   </main>
 
   <div id="viewModal" class="modal-overlay">
@@ -370,25 +542,54 @@
 
     /** UI MODULES **/
     function switchModule(mod) {
-      if (currentUserMode === 'guest' && mod === 'delivery') {
-          alert("GUEST ACCESS: Delivery module is restricted.");
+      if (currentUserMode === 'guest' && (mod === 'delivery' || mod === 'inventory' || mod === 'ris')) {
+          alert("GUEST ACCESS: Admin modules are restricted.");
           return;
       }
 
       currentModule = mod;
-      document.getElementById('appBody').className = mod === 'delivery' ? 'flex delivery-mode' : 'flex';
-      document.getElementById('sidebarTitle').innerText = mod === 'delivery' ? 'GSO DELIVERY CHECKER' : 'GSO PROCUREMENT';
       
+      // Update app body class and sidebar title
+      if (mod === 'delivery') {
+        document.getElementById('appBody').className = 'flex delivery-mode';
+        document.getElementById('sidebarTitle').innerText = 'GSO DELIVERY CHECKER';
+      } else if (mod === 'inventory') {
+        document.getElementById('appBody').className = 'flex inventory-mode';
+        document.getElementById('sidebarTitle').innerText = 'GSO INVENTORY MASTER';
+      } else if (mod === 'ris') {
+        document.getElementById('appBody').className = 'flex ris-mode';
+        document.getElementById('sidebarTitle').innerText = 'GSO REQUISITION (RIS)';
+      } else {
+        document.getElementById('appBody').className = 'flex';
+        document.getElementById('sidebarTitle').innerText = 'GSO PROCUREMENT';
+      }
+      
+      // Update navigation buttons
       document.getElementById('nav-purchase').classList.toggle('active', mod === 'purchase');
       document.getElementById('nav-delivery').classList.toggle('active', mod === 'delivery');
+      document.getElementById('nav-inventory').classList.toggle('active', mod === 'inventory');
+      document.getElementById('nav-ris').classList.toggle('active', mod === 'ris');
       
-      document.getElementById('purchaseControls').classList.toggle('hidden-module', mod === 'delivery');
-      document.getElementById('deliveryControls').classList.toggle('hidden-module', mod === 'purchase');
+      // Update control panels
+      document.getElementById('purchaseControls').classList.toggle('hidden-module', mod !== 'purchase');
+      document.getElementById('deliveryControls').classList.toggle('hidden-module', mod !== 'delivery');
+      document.getElementById('inventoryControls').classList.toggle('hidden-module', mod !== 'inventory');
+      document.getElementById('risControls').classList.toggle('hidden-module', mod !== 'ris');
       
-      document.getElementById('module-purchase').classList.toggle('hidden-module', mod === 'delivery');
-      document.getElementById('module-delivery').classList.toggle('hidden-module', mod === 'purchase');
+      // Update modules
+      document.getElementById('module-purchase').classList.toggle('hidden-module', mod !== 'purchase');
+      document.getElementById('module-delivery').classList.toggle('hidden-module', mod !== 'delivery');
+      document.getElementById('module-inventory').classList.toggle('hidden-module', mod !== 'inventory');
+      document.getElementById('module-ris').classList.toggle('hidden-module', mod !== 'ris');
       
       document.getElementById('searchStatus').innerText = "";
+      
+      // Load module-specific data
+      if (mod === 'inventory') {
+        loadInventoryStatus();
+      } else if (mod === 'ris') {
+        generateRISNumber();
+      }
     }
 
     /** PROCUREMENT LOGIC **/
@@ -663,6 +864,189 @@
     }
 
     function closeModal() { document.getElementById('viewModal').style.display = 'none'; }
+
+    /** INVENTORY MANAGEMENT FUNCTIONS **/
+    function loadInventoryStatus() {
+      document.getElementById('inventoryEmptyState').classList.remove('hidden');
+      document.getElementById('inventoryContent').classList.add('hidden');
+      
+      google.script.run.withSuccessHandler(res => {
+        if (res.success) {
+          document.getElementById('inventoryEmptyState').classList.add('hidden');
+          document.getElementById('inventoryContent').classList.remove('hidden');
+          
+          // Update summary
+          document.getElementById('totalItems').innerText = res.summary.totalItems;
+          document.getElementById('activeItems').innerText = res.summary.activeItems;
+          document.getElementById('lowStockItems').innerText = res.summary.lowStockItems;
+          document.getElementById('outOfStockItems').innerText = res.summary.outOfStockItems;
+          document.getElementById('healthyItems').innerText = res.summary.healthyItems;
+          
+          // Update low stock alerts
+          if (res.alerts.length > 0) {
+            document.getElementById('lowStockAlertsContainer').classList.remove('hidden');
+            const alertsContainer = document.getElementById('alertsContainer');
+            alertsContainer.innerHTML = '';
+            
+            res.alerts.forEach(alert => {
+              const alertDiv = document.createElement('div');
+              alertDiv.className = `p-2 bg-gray-800 rounded border ${alert.status === 'OUT_OF_STOCK' ? 'border-red-500' : 'border-yellow-500'}`;
+              alertDiv.innerHTML = `
+                <div class="flex justify-between items-center">
+                  <span class="text-xs font-bold">${alert.stockNo}</span>
+                  <span class="text-xs ${alert.status === 'OUT_OF_STOCK' ? 'text-red-400' : 'text-yellow-400'}">${alert.status}</span>
+                </div>
+                <div class="text-xs text-gray-400">${alert.description}</div>
+                <div class="text-xs text-gray-500">Current: ${alert.currentQty} | Buffer: ${alert.bufferLevel}</div>
+              `;
+              alertsContainer.appendChild(alertDiv);
+            });
+          } else {
+            document.getElementById('lowStockAlertsContainer').classList.add('hidden');
+          }
+        } else {
+          document.getElementById('inventoryStatus').innerHTML = '<div class="text-red-400">Error loading inventory: ' + res.error + '</div>';
+        }
+      }).getInventoryStatus();
+    }
+
+    function refreshInventoryStatus() {
+      loadInventoryStatus();
+    }
+
+    /** RIS MANAGEMENT FUNCTIONS **/
+    function createNewRIS() {
+      document.getElementById('risEmptyState').classList.add('hidden');
+      document.getElementById('risContent').classList.remove('hidden');
+      
+      // Set current date
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('risDateRequested').value = today;
+      
+      // Generate RIS number
+      generateRISNumber();
+      
+      // Clear form
+      resetRISForm();
+    }
+
+    function generateRISNumber() {
+      google.script.run.withSuccessHandler(res => {
+        document.getElementById('risNumber').innerText = res;
+      }).generateRISNumber();
+    }
+
+    function addRISItem() {
+      const tbody = document.getElementById('risItemsTable');
+      const tr = document.createElement('tr');
+      tr.className = "border-b border-gray-800";
+      tr.innerHTML = `
+        <td class="p-2"><input type="text" class="input-field text-xs ris-stock-no mandatory" placeholder="Stock No"></td>
+        <td class="p-2"><input type="text" class="input-field text-xs ris-desc mandatory" placeholder="Description"></td>
+        <td class="p-2"><input type="text" class="input-field text-xs ris-unit mandatory" placeholder="Unit"></td>
+        <td class="p-2"><input type="number" class="input-field text-xs ris-qty-req mandatory" placeholder="0" oninput="calcRISTotal()"></td>
+        <td class="p-2"><input type="number" class="input-field text-xs ris-qty-issue mandatory" placeholder="0" oninput="calcRISTotal()"></td>
+        <td class="p-2"><input type="number" class="input-field text-xs ris-cost mandatory" placeholder="0.00" oninput="calcRISTotal()"></td>
+        <td class="p-2 text-right font-bold text-purple-400 ris-total">0.00</td>
+        <td class="p-2 text-center"><button onclick="this.closest('tr').remove(); calcRISTotal();" class="text-red-500">✖</button></td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+    function calcRISTotal() {
+      let total = 0;
+      let itemCount = 0;
+      
+      document.querySelectorAll('#risItemsTable tr').forEach(tr => {
+        const qty = parseFloat(tr.querySelector('.ris-qty-issue').value) || 0;
+        const cost = parseFloat(tr.querySelector('.ris-cost').value) || 0;
+        total += qty * cost;
+        if (qty > 0) itemCount++;
+      });
+      
+      document.getElementById('totalRISItems').innerText = itemCount;
+      document.getElementById('totalRISCost').innerText = total.toFixed(2);
+    }
+
+    function resetRISForm() {
+      document.getElementById('risDepartment').value = "";
+      document.getElementById('risRequestedBy').value = "";
+      document.getElementById('risPurpose').value = "";
+      document.getElementById('risDateRequested').value = new Date().toISOString().split('T')[0];
+      document.getElementById('risItemsTable').innerHTML = '';
+      document.getElementById('totalRISItems').innerText = '0';
+      document.getElementById('totalRISCost').innerText = '0.00';
+    }
+
+    function submitRIS() {
+      const btn = document.getElementById('submitRISBtn');
+      btn.disabled = true;
+      btn.innerText = "PROCESSING...";
+      
+      // Validate form
+      let hasError = false;
+      document.querySelectorAll('#risContent .mandatory').forEach(el => {
+        if (!el.value.trim()) { 
+          el.classList.add('highlight-red'); 
+          hasError = true; 
+        } else el.classList.remove('highlight-red');
+      });
+      
+      if (hasError) {
+        btn.disabled = false;
+        btn.innerText = "Submit RIS";
+        alert("Please fill in all required fields.");
+        return;
+      }
+      
+      const formData = {
+        department: document.getElementById('risDepartment').value,
+        requestedBy: document.getElementById('risRequestedBy').value,
+        purpose: document.getElementById('risPurpose').value,
+        dateRequested: document.getElementById('risDateRequested').value,
+        items: []
+      };
+      
+      document.querySelectorAll('#risItemsTable tr').forEach(tr => {
+        formData.items.push({
+          stockNo: tr.querySelector('.ris-stock-no').value,
+          description: tr.querySelector('.ris-desc').value,
+          unit: tr.querySelector('.ris-unit').value,
+          qtyRequested: parseFloat(tr.querySelector('.ris-qty-req').value) || 0,
+          qtyIssued: parseFloat(tr.querySelector('.ris-qty-issue').value) || 0,
+          unitCost: parseFloat(tr.querySelector('.ris-cost').value) || 0,
+          remarks: tr.querySelector('.ris-notes') ? tr.querySelector('.ris-notes').value : ""
+        });
+      });
+      
+      google.script.run.withSuccessHandler(res => {
+        btn.disabled = false;
+        btn.innerText = "Submit RIS";
+        
+        if (res.success) {
+          alert('RIS processed successfully! RIS Number: ' + res.risNumber);
+          resetRISForm();
+          document.getElementById('risEmptyState').classList.remove('hidden');
+          document.getElementById('risContent').classList.add('hidden');
+          
+          // Show QR code if available
+          if (res.qrCodeUrl) {
+            window.open(res.qrCodeUrl, '_blank');
+          }
+        } else {
+          alert('Error: ' + res.error);
+        }
+      }).processRIS(formData);
+    }
+
+    function performRISSearch() {
+      const query = document.getElementById('risSearchInput').value.trim();
+      if (!query) return;
+      
+      // This would search for RIS records
+      // Implementation would be similar to performSearch but for RIS database
+      alert('RIS search functionality to be implemented');
+    }
   </script>
 </body>
 </html>
