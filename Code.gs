@@ -919,7 +919,13 @@ function getInventoryStatus() {
     
     const data = inventorySheet.getDataRange().getValues();
     const headers = data[0];
+    const stockNoIndex = headers.indexOf("STOCK_NO");
+    const descIndex = headers.indexOf("ITEM_DESCRIPTION");
     const qtyIndex = headers.indexOf("QTY_ON_HAND");
+    const uomIndex = headers.indexOf("UNIT") || headers.indexOf("UOM");
+    const locationIndex = headers.indexOf("LOCATION");
+    const binIndex = headers.indexOf("BIN");
+    const abcIndex = headers.indexOf("ABC_CLASSIFICATION");
     const bufferIndex = headers.indexOf("BUFFER_LEVEL");
     const statusIndex = headers.indexOf("STATUS");
     
@@ -927,9 +933,16 @@ function getInventoryStatus() {
     let activeItems = 0;
     let lowStockItems = 0;
     let outOfStockItems = 0;
+    let inventoryItems = [];
     
     for (let i = 1; i < data.length; i++) {
+      const stockNo = data[i][stockNoIndex] || "";
+      const description = data[i][descIndex] || "";
       const qty = parseFloat(data[i][qtyIndex]) || 0;
+      const uom = data[i][uomIndex] || "";
+      const location = data[i][locationIndex] || "";
+      const bin = data[i][binIndex] || "";
+      const abcClass = data[i][abcIndex] || "";
       const buffer = parseFloat(data[i][bufferIndex]) || 0;
       const status = data[i][statusIndex] || "";
       
@@ -938,10 +951,21 @@ function getInventoryStatus() {
       if (status === "ACTIVE") activeItems++;
       if (qty <= buffer && qty > 0) lowStockItems++;
       if (qty <= 0) outOfStockItems++;
+      
+      inventoryItems.push({
+        stockNo: stockNo,
+        description: description,
+        qtyOnHand: qty,
+        uom: uom,
+        locationBin: location + " / " + bin,
+        abcClass: abcClass,
+        status: status
+      });
     }
     
     return {
       success: true,
+      inventoryItems: inventoryItems,
       summary: {
         totalItems: totalItems,
         activeItems: activeItems,

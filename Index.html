@@ -9,6 +9,8 @@
     
     .sidebar { 
       width: 320px; 
+      min-width: 320px; 
+      max-width: 320px;
       background: #0f172a; 
       border-right: 1px solid #1e293b; 
       padding: 20px; 
@@ -16,9 +18,17 @@
       display: flex; 
       flex-direction: column; 
       height: 100vh; 
+      flex-shrink: 0;
     }
     .sidebar.delivery-mode { border-right-color: #10b981; }
-    .main { margin-left: 320px; padding: 40px; height: 100vh; overflow-y: auto; }
+    .main { 
+      margin-left: 320px; 
+      padding: 40px; 
+      height: 100vh; 
+      overflow-y: auto; 
+      flex: 1;
+      min-width: 0;
+    }
     
     .anime-card { background: rgba(23, 28, 41, 0.9); border: 1px solid rgba(0, 210, 255, 0.3); border-radius: 12px; }
     .delivery-mode .anime-card { border-color: rgba(16, 185, 129, 0.3); }
@@ -145,6 +155,10 @@
       <button onclick="switchModule('delivery')" id="nav-delivery" class="nav-btn admin-only hidden">2. DELIVERY CHECKER</button>
       <button onclick="switchModule('inventory')" id="nav-inventory" class="nav-btn admin-only hidden">3. INVENTORY MASTER</button>
       <button onclick="switchModule('ris')" id="nav-ris" class="nav-btn admin-only hidden">4. REQUISITION (RIS)</button>
+    </div>
+
+    <div class="admin-only hidden" id="logoutContainer">
+      <button onclick="logout()" class="w-full py-2 bg-red-600 rounded-lg mb-4 uppercase text-xs tracking-widest text-white hover:bg-red-500">LOGOUT</button>
     </div>
 
     <hr class="border-gray-800 mb-6">
@@ -371,22 +385,51 @@
       </div>
 
       <div id="inventoryContent" class="hidden">
-        <div id="inventorySummary" class="grid grid-cols-4 gap-4 mb-6">
-          <div class="bg-gray-800 p-4 rounded-lg text-center">
-            <p class="text-[10px] text-gray-500 uppercase">Active</p>
-            <p id="activeItems" class="text-xl font-bold text-green-400">0</p>
+        <div class="mb-6">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-bold text-orange-400 uppercase">Inventory Status Summary</h3>
+            <button onclick="refreshInventoryStatus()" class="px-4 py-2 bg-orange-600 rounded-lg text-xs text-white hover:bg-orange-500">REFRESH</button>
           </div>
-          <div class="bg-gray-800 p-4 rounded-lg text-center">
-            <p class="text-[10px] text-gray-500 uppercase">Low Stock</p>
-            <p id="lowStockItems" class="text-xl font-bold text-yellow-400">0</p>
+          
+          <div id="inventorySummary" class="grid grid-cols-4 gap-4 mb-6">
+            <div class="bg-gray-800 p-4 rounded-lg text-center">
+              <p class="text-[10px] text-gray-500 uppercase">Total Items</p>
+              <p id="totalItems" class="text-xl font-bold text-orange-400">0</p>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg text-center">
+              <p class="text-[10px] text-gray-500 uppercase">Active</p>
+              <p id="activeItems" class="text-xl font-bold text-green-400">0</p>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg text-center">
+              <p class="text-[10px] text-gray-500 uppercase">Low Stock</p>
+              <p id="lowStockItems" class="text-xl font-bold text-yellow-400">0</p>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg text-center">
+              <p class="text-[10px] text-gray-500 uppercase">Out of Stock</p>
+              <p id="outOfStockItems" class="text-xl font-bold text-red-400">0</p>
+            </div>
           </div>
-          <div class="bg-gray-800 p-4 rounded-lg text-center">
-            <p class="text-[10px] text-gray-500 uppercase">Out of Stock</p>
-            <p id="outOfStockItems" class="text-xl font-bold text-red-400">0</p>
-          </div>
-          <div class="bg-gray-800 p-4 rounded-lg text-center">
-            <p class="text-[10px] text-gray-500 uppercase">Healthy</p>
-            <p id="healthyItems" class="text-xl font-bold text-blue-400">0</p>
+        </div>
+
+        <div class="mb-6">
+          <h3 class="text-lg font-bold text-orange-400 uppercase mb-4">Inventory Master Table</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs bg-gray-900 rounded-lg">
+              <thead>
+                <tr class="border-b border-gray-700">
+                  <th class="text-left p-3 text-gray-400 uppercase font-bold">STOCK_NO</th>
+                  <th class="text-left p-3 text-gray-400 uppercase font-bold">ITEM_DESCRIPTION</th>
+                  <th class="text-left p-3 text-gray-400 uppercase font-bold">QTY_ON_HAND</th>
+                  <th class="text-left p-3 text-gray-400 uppercase font-bold">UOM</th>
+                  <th class="text-left p-3 text-gray-400 uppercase font-bold">LOCATION / BIN</th>
+                  <th class="text-left p-3 text-gray-400 uppercase font-bold">ABC_CLASS</th>
+                  <th class="text-left p-3 text-gray-400 uppercase font-bold">STATUS</th>
+                </tr>
+              </thead>
+              <tbody id="inventoryTableBody">
+                <!-- Inventory items will be loaded here -->
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -413,7 +456,17 @@
         <div class="grid grid-cols-2 gap-6 mb-6">
           <div>
             <label class="block text-[10px] text-gray-500 font-bold mb-2 uppercase">Department</label>
-            <input type="text" id="risDepartment" class="input-field text-sm" placeholder="Enter department">
+            <select id="risDepartment" class="input-field text-sm">
+              <option value="">Select Department</option>
+              <option value="IT Department">IT Department</option>
+              <option value="Admin Office">Admin Office</option>
+              <option value="Accounting">Accounting</option>
+              <option value="Human Resources">Human Resources</option>
+              <option value="Operations">Operations</option>
+              <option value="Maintenance">Maintenance</option>
+              <option value="Procurement">Procurement</option>
+              <option value="General Services">General Services</option>
+            </select>
           </div>
           <div>
             <label class="block text-[10px] text-gray-500 font-bold mb-2 uppercase">Requested By</label>
@@ -501,8 +554,23 @@
     let currentUserMode = null; 
 
     window.onload = () => {
-      addPurchaseRow();
-      document.getElementById('username').focus();
+      // Check for existing login session
+      const savedUserMode = localStorage.getItem('currentUserMode');
+      const savedAdminUser = localStorage.getItem('adminUser');
+      
+      if (savedUserMode === 'admin' && savedAdminUser) {
+        // Restore admin session
+        currentUserMode = 'admin';
+        if (savedAdminUser === 'lee') {
+          showAdminSuccess('https://github.com/251805/sirpacheck/blob/main/18.png?raw=true', 'Lee');
+        } else if (savedAdminUser === 'dojie') {
+          showAdminSuccess('https://github.com/251805/sirpacheck/blob/main/dojie.jpg?raw=true', 'Dojie');
+        }
+      } else {
+        // Show login screen
+        addPurchaseRow();
+        document.getElementById('username').focus();
+      }
     };
 
     /** ENHANCED LOGIN HANDLER **/
@@ -535,6 +603,11 @@
 
     function showAdminSuccess(imgUrl, user) {
       currentUserMode = 'admin';
+      
+      // Save session to localStorage
+      localStorage.setItem('currentUserMode', 'admin');
+      localStorage.setItem('adminUser', user);
+      
       document.getElementById('adminImage').src = imgUrl;
       document.getElementById('adminPopUp').style.display = 'flex';
       document.getElementById('loginOverlay').style.display = 'none'; // Force hide
@@ -549,6 +622,11 @@
 
     function guestLogin() {
       currentUserMode = 'guest';
+      
+      // Clear admin session
+      localStorage.removeItem('currentUserMode');
+      localStorage.removeItem('adminUser');
+      
       document.getElementById('loginOverlay').style.display = 'none'; // Force hide
       
       // Ensure Admin Specific Features remain hidden
@@ -560,6 +638,29 @@
 
     function closeAdminPop() {
       document.getElementById('adminPopUp').style.display = 'none';
+    }
+
+    function logout() {
+      // Clear all session data
+      localStorage.removeItem('currentUserMode');
+      localStorage.removeItem('adminUser');
+      currentUserMode = null;
+      
+      // Show login screen
+      document.getElementById('loginOverlay').style.display = 'flex';
+      document.getElementById('adminPopUp').style.display = 'none';
+      document.getElementById('username').value = '';
+      document.getElementById('password').value = '';
+      document.getElementById('username').focus();
+      
+      // Hide all admin elements
+      document.querySelectorAll('.admin-only').forEach(el => {
+          el.classList.add('hidden');
+          el.style.display = 'none';
+      });
+      
+      // Reset to purchase module
+      switchModule('purchase');
     }
 
     /** UI MODULES **/
@@ -889,8 +990,8 @@
 
     /** INVENTORY MANAGEMENT FUNCTIONS **/
     function loadInventoryStatus() {
-      document.getElementById('inventoryEmptyState').classList.remove('hidden');
-      document.getElementById('inventoryContent').classList.add('hidden');
+      document.getElementById('inventoryEmptyState').classList.add('hidden');
+      document.getElementById('inventoryContent').classList.remove('hidden');
       
       google.script.run.withSuccessHandler(res => {
         if (res.success) {
@@ -903,6 +1004,44 @@
           document.getElementById('lowStockItems').innerText = res.summary.lowStockItems;
           document.getElementById('outOfStockItems').innerText = res.summary.outOfStockItems;
           document.getElementById('healthyItems').innerText = res.summary.healthyItems;
+          
+          // Populate inventory table
+          const tableBody = document.getElementById('inventoryTableBody');
+          tableBody.innerHTML = '';
+          
+          res.inventoryItems.forEach(item => {
+            const row = document.createElement('tr');
+            row.className = 'border-b border-gray-800 hover:bg-gray-800';
+            
+            // Status color coding
+            let statusClass = 'text-gray-400';
+            let statusBg = 'bg-gray-900';
+            if (item.status === 'OUT_OF_STOCK') {
+              statusClass = 'text-red-400';
+              statusBg = 'bg-red-900';
+            } else if (item.status === 'LOW_STOCK') {
+              statusClass = 'text-yellow-400';
+              statusBg = 'bg-yellow-900';
+            } else if (item.status === 'ACTIVE') {
+              statusClass = 'text-green-400';
+              statusBg = 'bg-green-900';
+            }
+            
+            row.innerHTML = `
+              <td class="p-3 font-mono text-xs">${item.stockNo}</td>
+              <td class="p-3 text-xs">${item.description}</td>
+              <td class="p-3 text-center font-bold ${statusClass}">${item.qtyOnHand}</td>
+              <td class="p-3 text-xs">${item.uom}</td>
+              <td class="p-3 text-xs">${item.locationBin}</td>
+              <td class="p-3 text-center">
+                <span class="px-2 py-1 rounded text-xs font-bold ${statusBg} ${statusClass}">${item.abcClass}</span>
+              </td>
+              <td class="p-3 text-center">
+                <span class="px-2 py-1 rounded text-xs font-bold ${statusBg} ${statusClass}">${item.status}</span>
+              </td>
+            `;
+            tableBody.appendChild(row);
+          });
           
           // Update low stock alerts
           if (res.alerts.length > 0) {
