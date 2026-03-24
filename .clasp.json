@@ -1,6 +1,7 @@
 {
   "scriptId": "1IhKetOMESuTqk9yss-oqB3YMl1j0LDvbPwGfi2KLVa-WK5Lji2wq6MZi",
   "rootDir": "",
+  "projectId": "https://docs.google.com/spreadsheets/d/1KeXiQZnlENkDKX9EggL5YFdFXdwbmIzDle1DepMbJ4U/edit?gid=185865780#gid=185865780",
   "scriptExtensions": [
     ".js",
     ".gs"
@@ -11,6 +12,5 @@
   "jsonExtensions": [
     ".json"
   ],
-  "filePushOrder": [],
-  "skipSubdirectories": false
+  "filePushOrder": []
 }

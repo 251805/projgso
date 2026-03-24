@@ -31,6 +31,77 @@ function doGet() {
 }
 
 /**
+ * Check and display current Google Sheets structure
+ */
+function checkSheetStructure() {
+  const ss = SpreadsheetApp.openById(MASTER_SPREADSHEET_ID);
+  
+  // Check PR_DATABASE sheet
+  const prSheet = ss.getSheetByName(PR_SHEET_NAME);
+  if (prSheet) {
+    const prHeaders = prSheet.getRange(1, 1, 1, prSheet.getLastColumn()).getValues()[0];
+    Logger.log("PR_DATABASE Headers: " + JSON.stringify(prHeaders));
+    Logger.log("PR_DATABASE Last Column: " + prSheet.getLastColumn());
+    
+    // Check if GSOID# exists
+    const gsoidIndex = prHeaders.indexOf("GSOID#");
+    const prIndex = prHeaders.indexOf("PR#");
+    Logger.log("GSOID# found at index: " + gsoidIndex);
+    Logger.log("PR# found at index: " + prIndex);
+    
+    // Get first few rows of data to verify
+    const prData = prSheet.getRange(1, 1, Math.min(5, prSheet.getLastRow()), prSheet.getLastColumn()).getValues();
+    Logger.log("PR_DATABASE Sample Data: " + JSON.stringify(prData));
+  }
+  
+  // Check DR_DATABASE sheet
+  const drSheet = ss.getSheetByName(DR_SHEET_NAME);
+  if (drSheet) {
+    const drHeaders = drSheet.getRange(1, 1, 1, drSheet.getLastColumn()).getValues()[0];
+    Logger.log("DR_DATABASE Headers: " + JSON.stringify(drHeaders));
+    Logger.log("DR_DATABASE Last Column: " + drSheet.getLastColumn());
+    
+    // Check if GSOID# exists
+    const drGsoidIndex = drHeaders.indexOf("GSOID#");
+    const drPrIndex = drHeaders.indexOf("PR#");
+    Logger.log("DR GSOID# found at index: " + drGsoidIndex);
+    Logger.log("DR PR# found at index: " + drPrIndex);
+    
+    // Get first few rows of data to verify
+    const drData = drSheet.getRange(1, 1, Math.min(5, drSheet.getLastRow()), drSheet.getLastColumn()).getValues();
+    Logger.log("DR_DATABASE Sample Data: " + JSON.stringify(drData));
+  }
+  
+  return {
+    prSheetExists: !!prSheet,
+    drSheetExists: !!drSheet,
+    prHeaders: prSheet ? prSheet.getRange(1, 1, 1, prSheet.getLastColumn()).getValues()[0] : [],
+    drHeaders: drSheet ? drSheet.getRange(1, 1, 1, drSheet.getLastColumn()).getValues()[0] : [],
+    prRowCount: prSheet ? prSheet.getLastRow() : 0,
+    drRowCount: drSheet ? drSheet.getLastRow() : 0
+  };
+}
+
+/**
+ * Test function to generate a sample GSOID# and verify structure
+ */
+function testGSOIDGeneration() {
+  const testDate = "2026-03-23";
+  const gsoid = generateGSOIDNumber(testDate);
+  Logger.log("Generated GSOID# for date " + testDate + ": " + gsoid);
+  
+  // Test search function
+  const searchResult = searchPR(gsoid);
+  if (searchResult) {
+    Logger.log("Search Result Found: " + JSON.stringify(searchResult));
+  } else {
+    Logger.log("No search result found for GSOID#: " + gsoid);
+  }
+  
+  return gsoid;
+}
+
+/**
  * Updates existing Google Sheets to new GSOID# structure
  */
 function updateSheetStructure() {
