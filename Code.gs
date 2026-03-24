@@ -906,71 +906,6 @@ function generateQRCode(documentNumber) {
 }
 
 /**
- * Get detailed inventory data for table display
- */
-function getInventoryTableData() {
-  try {
-    const ss = SpreadsheetApp.openById(MASTER_SPREADSHEET_ID);
-    const inventorySheet = ss.getSheetByName(INVENTORY_SHEET_NAME);
-    
-    if (!inventorySheet) {
-      return { success: false, error: "Inventory sheet not found" };
-    }
-    
-    const data = inventorySheet.getDataRange().getValues();
-    const headers = data[0];
-    
-    const stockNoIndex = headers.indexOf("STOCK_NO");
-    const descriptionIndex = headers.indexOf("ITEM_DESCRIPTION");
-    const qtyIndex = headers.indexOf("QTY_ON_HAND");
-    const locationIndex = headers.indexOf("LOCATION");
-    const binIndex = headers.indexOf("BIN");
-    const abcIndex = headers.indexOf("ABC_CLASSIFICATION");
-    const statusIndex = headers.indexOf("STATUS");
-    const bufferIndex = headers.indexOf("BUFFER_LEVEL");
-    
-    const inventoryItems = [];
-    
-    for (let i = 1; i < data.length; i++) {
-      const qty = parseFloat(data[i][qtyIndex]) || 0;
-      const buffer = parseFloat(data[i][bufferIndex]) || 0;
-      let itemStatus = "HEALTHY";
-      let statusColor = "text-green-400";
-      
-      if (qty <= 0) {
-        itemStatus = "OUT OF STOCK";
-        statusColor = "text-red-400";
-      } else if (qty <= buffer) {
-        itemStatus = "LOW STOCK";
-        statusColor = "text-yellow-400";
-      }
-      
-      inventoryItems.push({
-        stockNo: data[i][stockNoIndex] || "",
-        description: data[i][descriptionIndex] || "",
-        qtyOnHand: qty,
-        uom: "pcs", // Default unit, can be enhanced
-        location: data[i][locationIndex] || "",
-        bin: data[i][binIndex] || "",
-        locationBin: `${data[i][locationIndex] || ""} / ${data[i][binIndex] || ""}`,
-        abcClass: data[i][abcIndex] || "C",
-        status: itemStatus,
-        statusColor: statusColor
-      });
-    }
-    
-    return {
-      success: true,
-      items: inventoryItems,
-      totalItems: inventoryItems.length
-    };
-    
-  } catch (e) {
-    return { success: false, error: e.toString() };
-  }
-}
-
-/**
  * Get inventory status for dashboard - Low Stock Alerts
  */
 function getInventoryStatus() {
@@ -1015,6 +950,68 @@ function getInventoryStatus() {
         healthyItems: activeItems - lowStockItems - outOfStockItems
       },
       alerts: checkLowStockAlerts(inventorySheet, headers)
+    };
+    
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+/**
+ * Get inventory table data for actionable display
+ */
+function getInventoryTableData() {
+  try {
+    const ss = SpreadsheetApp.openById(MASTER_SPREADSHEET_ID);
+    const inventorySheet = ss.getSheetByName(INVENTORY_SHEET_NAME);
+    
+    if (!inventorySheet) {
+      return { success: false, error: "Inventory sheet not found" };
+    }
+    
+    const data = inventorySheet.getDataRange().getValues();
+    const headers = data[0];
+    
+    const stockNoIndex = headers.indexOf("STOCK_NO");
+    const descIndex = headers.indexOf("ITEM_DESCRIPTION");
+    const qtyIndex = headers.indexOf("QTY_ON_HAND");
+    const locationIndex = headers.indexOf("LOCATION");
+    const binIndex = headers.indexOf("BIN");
+    const abcIndex = headers.indexOf("ABC_CLASSIFICATION");
+    const bufferIndex = headers.indexOf("BUFFER_LEVEL");
+    const statusIndex = headers.indexOf("STATUS");
+    
+    const items = [];
+    
+    for (let i = 1; i < data.length; i++) {
+      const qty = parseFloat(data[i][qtyIndex]) || 0;
+      const buffer = parseFloat(data[i][bufferIndex]) || 0;
+      const status = data[i][statusIndex] || "ACTIVE";
+      
+      // Determine actual status based on quantity
+      let actualStatus = "Healthy";
+      if (qty <= 0) {
+        actualStatus = "OUT_OF_STOCK";
+      } else if (qty <= buffer) {
+        actualStatus = "LOW_STOCK";
+      }
+      
+      items.push({
+        stockNo: data[i][stockNoIndex] || "",
+        itemDescription: data[i][descIndex] || "",
+        qtyOnHand: qty,
+        unit: "pcs", // Default unit, can be enhanced
+        location: data[i][locationIndex] || "MAIN",
+        bin: data[i][binIndex] || "A-01",
+        abcClass: data[i][abcIndex] || "C",
+        bufferLevel: buffer,
+        status: actualStatus
+      });
+    }
+    
+    return {
+      success: true,
+      items: items
     };
     
   } catch (e) {
